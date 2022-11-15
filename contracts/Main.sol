@@ -112,7 +112,7 @@ contract Main is Context, Ownable, ERC20
     event OnBridgeMint(address user, uint amount, uint src);
 
     // CONSTRUCTOR
-    constructor() ERC20("Test Token", "Test") {
+    constructor() ERC20("XEX Crypto", "XEX") {
         genesisTs = block.timestamp;
         treasure = msg.sender;
         signer = msg.sender;
