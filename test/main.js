@@ -23,18 +23,19 @@ contract("default", async accounts => {
         }
     })
     it("main", async () => {
-        await src.claimRank(term, {from: dev});
+        const chainid = (await (web3.eth.getChainId())).toString();
+        const fee = (await src.fee()).toString();
+        await src.claimRank(term, {from: dev, value: fee});
         const userMints = await src.userMints(dev);
         const ts = parseInt(userMints.maturityTs)+1;
         await timeIncreaseTo(ts);
-        await src.claimMintReward({from: dev});
+        await src.claimMintReward({from: dev, value: fee});
         const srcBalance = (await src.balanceOf(dev)).toString();
-        await src.burnFromBridge(srcBalance);
-        const tx = (await src.bridgeLastUserBurn(dev)).toString();
-        const hash = await dst.bridgeEncodeData(dev, srcBalance, tx);
-        const signature = await web3.eth.sign(hash, dev);
+        await src.burnFromBridge(srcBalance, chainid, {from: dev, value: fee});
+        const burnInfo = (await src.bridgeLastUserBurn(dev));
+        const signature = await web3.eth.sign(burnInfo.tx, dev);
         const { v, r, s } = ethers.utils.splitSignature(signature);
-        await dst.mintFromBridge(v, r, s, srcBalance, tx);
+        await dst.mintFromBridge(v, r, s, srcBalance, burnInfo.id, burnInfo.src, burnInfo.timestamp, {from: dev, value: fee} );
     })
 
 })

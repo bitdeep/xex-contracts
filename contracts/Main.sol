@@ -44,8 +44,8 @@ contract Main is Context, Ownable, ERC20
     uint256 public constant MAX_TERM_START = 100 * SECONDS_IN_DAY;
     uint256 public constant MAX_TERM_END = 1_000 * SECONDS_IN_DAY;
     uint256 public constant TERM_AMPLIFIER = 15;
-    uint256 public constant TERM_AMPLIFIER_THRESHOLD = 5_000;
-    uint256 public constant REWARD_AMPLIFIER_START = 6_000;
+    uint256 public constant TERM_AMPLIFIER_THRESHOLD = 608;
+    uint256 public constant REWARD_AMPLIFIER_START = 730;
     uint256 public constant REWARD_AMPLIFIER_END = 1;
     uint256 public constant EAA_PM_START = 1000;
     uint256 public constant EAA_PM_STEP = 1;
@@ -96,7 +96,11 @@ contract Main is Context, Ownable, ERC20
     mapping(bytes32 => bool) public txExecuted;
     struct BridgeBurn{
         bytes32 tx;
+        uint id;
         uint amount;
+        uint src;
+        uint dst;
+        uint timestamp;
     }
     uint public bridgeBurns = 0;
     uint public bridgeMints = 0;
@@ -104,8 +108,8 @@ contract Main is Context, Ownable, ERC20
     mapping(address => BridgeBurn[]) public bridgeUserBurns;
     mapping(address => BridgeBurn) public bridgeLastUserBurn;
     bool public bridgeStatus = true;
-    event OnBridgeBurn(address user, uint amount, bytes32 nonce);
-    event OnBridgeMint(address user, uint amount, bytes32 tx);
+    event OnBridgeBurn(address user, uint amount, uint dst);
+    event OnBridgeMint(address user, uint amount, uint src);
 
     // CONSTRUCTOR
     constructor() ERC20("Test Token", "Test") {
@@ -123,7 +127,7 @@ contract Main is Context, Ownable, ERC20
         treasure = _treasure;
     }
 
-    function setMintFee(uint _fee) external onlyOwner {
+    function setFee(uint _fee) external onlyOwner {
         fee = _fee;
     }
 
@@ -303,12 +307,11 @@ contract Main is Context, Ownable, ERC20
     /**
      * @dev accepts User cRank claim provided all checks pass (incl. no current claim exists)
      */
-    function claimRank(uint256 term) external payable {
+    function claimRank(uint256 term) external payable checkFee {
         uint256 termSec = term * SECONDS_IN_DAY;
         require(termSec > MIN_TERM, "CRank: Term less than min");
         require(termSec < _calculateMaxTerm() + 1, "CRank: Term more than current max term");
         require(userMints[_msgSender()].rank == 0, "CRank: Mint already in progress");
-        require( fee == 0 || msg.value >= fee, "invalid fee");
         // create and store new MintInfo
         MintInfo memory mintInfo = MintInfo({
         user : _msgSender(),
@@ -326,11 +329,10 @@ contract Main is Context, Ownable, ERC20
     /**
      * @dev ends minting upon maturity (and within permitted Withdrawal Time Window), gets minted XEX
      */
-    function claimMintReward() public payable {
+    function claimMintReward() public payable checkFee {
         MintInfo memory mintInfo = userMints[_msgSender()];
         require(mintInfo.rank > 0, "CRank: No mint exists");
         require(block.timestamp > mintInfo.maturityTs, "CRank: Mint maturity not reached");
-        require( fee == 0 || msg.value >= fee, "invalid fee");
         // calculate reward and mint tokens
         uint256 rewardAmount = _calculateMintReward(
             mintInfo.rank,
@@ -350,14 +352,13 @@ contract Main is Context, Ownable, ERC20
      * @dev  ends minting upon maturity (and within permitted Withdrawal time Window)
      *       mints XEX coins and splits them between User and designated other address
      */
-    function claimMintRewardAndShare(address other, uint256 pct) external payable{
+    function claimMintRewardAndShare(address other, uint256 pct) external payable checkFee{
         MintInfo memory mintInfo = userMints[_msgSender()];
         require(other != address(0), "CRank: Cannot share with zero address");
         require(pct > 0, "CRank: Cannot share zero percent");
         require(pct < 101, "CRank: Cannot share 100+ percent");
         require(mintInfo.rank > 0, "CRank: No mint exists");
         require(block.timestamp > mintInfo.maturityTs, "CRank: Mint maturity not reached");
-        require( fee == 0 || msg.value >= fee, "invalid fee");
 
         // calculate reward
         uint256 rewardAmount = _calculateMintReward(
@@ -383,13 +384,12 @@ contract Main is Context, Ownable, ERC20
      * @dev  ends minting upon maturity (and within permitted Withdrawal time Window)
      *       mints XEX coins and stakes 'pct' of it for 'term'
      */
-    function claimMintRewardAndStake(uint256 pct, uint256 term) external payable {
+    function claimMintRewardAndStake(uint256 pct, uint256 term) external payable checkFee {
         MintInfo memory mintInfo = userMints[_msgSender()];
         // require(pct > 0, "CRank: Cannot share zero percent");
         require(pct < 101, "CRank: Cannot share >100 percent");
         require(mintInfo.rank > 0, "CRank: No mint exists");
         require(block.timestamp > mintInfo.maturityTs, "CRank: Mint maturity not reached");
-        require( fee == 0 || msg.value >= fee, "invalid fee");
         // calculate reward
         uint256 rewardAmount = _calculateMintReward(
             mintInfo.rank,
@@ -421,13 +421,12 @@ contract Main is Context, Ownable, ERC20
     /**
      * @dev initiates XEX Stake in amount for a term (days)
      */
-    function stake(uint256 amount, uint256 term) external payable {
+    function stake(uint256 amount, uint256 term) external payable checkFee {
         require(balanceOf(_msgSender()) >= amount, "XEX: not enough balance");
         require(amount > XEX_MIN_STAKE, "XEX: Below min stake");
         require(term * SECONDS_IN_DAY > MIN_TERM, "XEX: Below min stake term");
         require(term * SECONDS_IN_DAY < MAX_TERM_END + 1, "XEX: Above max stake term");
         require(userStakes[_msgSender()].amount == 0, "XEX: stake exists");
-        require( fee == 0 || msg.value >= fee, "invalid fee");
         // burn staked XEX
         _burn(_msgSender(), amount);
         // create XEX Stake
@@ -438,10 +437,9 @@ contract Main is Context, Ownable, ERC20
     /**
      * @dev ends XEX Stake and gets reward if the Stake is mature
      */
-    function withdraw() external payable {
+    function withdraw() external payable checkFee {
         StakeInfo memory userStake = userStakes[_msgSender()];
         require(userStake.amount > 0, "XEX: no stake exists");
-        require( fee == 0 || msg.value >= fee, "invalid fee");
         uint256 xenReward = _calculateStakeReward(
             userStake.amount,
             userStake.term,
@@ -475,38 +473,43 @@ contract Main is Context, Ownable, ERC20
         IBurnRedeemable(_msgSender()).onTokenBurned(user, amount);
     }
 
-
-    function bridgeEncodeData(address user, uint amount, bytes32 _tx) public view returns (bytes32){
-        return keccak256(abi.encodePacked(amount, block.chainid, user, _tx));
+    function burnFromBridge(uint amount, uint dst) external payable checkFee {
+        require(bridgeStatus,"bridge disabled");
+        ++bridgeBurns;
+        bytes32 _tx = bridgeEncodeData(msg.sender, amount, bridgeBurns, block.chainid, dst, block.timestamp);
+        BridgeBurn memory burnInfo = BridgeBurn({tx: _tx, id: bridgeBurns, amount: amount, src: block.chainid, dst: dst, timestamp: block.timestamp});
+        bridgeUserBurns[msg.sender].push(burnInfo);
+        bridgeLastUserBurn[msg.sender] = burnInfo;
+        _burn(msg.sender, amount);
+        emit OnBridgeBurn(msg.sender, amount, dst);
+    }
+    function bridgeEncodeData(address user, uint amount, uint id, uint src, uint dst, uint timestamp) public pure returns (bytes32){
+        return keccak256(abi.encodePacked(user, amount, id, src, dst, timestamp));
     }
 
-    modifier onlyMinter(uint8 v, bytes32 r, bytes32 s, uint amount, bytes32 _tx){
-        bytes32 proof = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", bridgeEncodeData(msg.sender, amount, _tx)));
+    modifier onlyMinter(uint8 v, bytes32 r, bytes32 s, uint amount, uint id, uint src, uint dst, uint timestamp){
+        bytes32 _tx = bridgeEncodeData(msg.sender, amount, id, src, dst, timestamp);
+        bytes32 proof = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _tx));
         require(ecrecover(proof, v, r, s) == signer, "not authorized");
         require(txExecuted[_tx] == false, "already processed");
         txExecuted[_tx] = true;
         _;
     }
-
-
-    function burnFromBridge(uint amount) external payable {
-        require(bridgeStatus,"bridge disabled");
-        require( fee == 0 || msg.value >= fee, "invalid fee");
-        bytes32 _tx = keccak256(abi.encode(msg.sender, block.difficulty, ++bridgeBurns, block.chainid, block.timestamp, amount));
-        BridgeBurn memory burnInfo = BridgeBurn({tx:_tx, amount: amount});
-        bridgeUserBurns[msg.sender].push(burnInfo);
-        bridgeLastUserBurn[msg.sender] = burnInfo;
-        _burn(msg.sender, amount);
-        emit OnBridgeBurn(msg.sender, amount, _tx);
+    modifier checkFee(){
+        require( msg.value >= fee, "invalid fee");
+        _;
+        if( msg.value > 0 ){
+            (bool status,) = payable(treasure).call{value: msg.value}("");
+            require(status, "error on fee transfer");
+        }
     }
-
-    function mintFromBridge(uint8 v, bytes32 r, bytes32 s, uint amount, bytes32 _tx) external payable onlyMinter(v, r, s, amount, _tx) {
+    function mintFromBridge(uint8 v, bytes32 r, bytes32 s, uint amount, uint id, uint src, uint timestamp)
+    external payable onlyMinter(v, r, s, amount, id, src, block.chainid, timestamp) checkFee {
         require(bridgeStatus,"bridge disabled");
-        require( fee == 0 || msg.value >= fee, "invalid fee");
         ++bridgeMints;
         bridgeAmount += amount;
         _mint(_msgSender(), amount);
-        emit OnBridgeMint(msg.sender, amount, _tx);
+        emit OnBridgeMint(msg.sender, amount, src);
     }
 
     function setBridgeStatus(bool _status) external onlyOwner {
@@ -519,6 +522,7 @@ contract Main is Context, Ownable, ERC20
     }
 
     function clearStuckBalance() external onlyOwner {
-        payable(treasure).call{value: address(this).balance}("");
+        (bool status, ) = payable(treasure).call{value: address(this).balance}("");
+        require(status, "error on transfer");
     }
 }
