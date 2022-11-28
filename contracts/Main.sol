@@ -8,13 +8,16 @@ import "@openzeppelin/contracts/interfaces/IERC165.sol";
 import "abdk-libraries-solidity/ABDKMath64x64.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IBurnRedeemable.sol";
-
-contract Main is Context, Ownable, ERC20
+import "./Layer0/ILayerZeroEndpoint.sol";
+import "./Layer0/ILayerZeroReceiver.sol";
+contract Main is Context, Ownable, ERC20, ILayerZeroReceiver
 {
     using Math for uint256;
     using ABDKMath64x64 for int128;
     using ABDKMath64x64 for uint256;
-
+    ILayerZeroEndpoint public endpoint;
+    bool public LayerZeroEnabled = false;
+    uint256 public LayerZeroGas = 350000;
     // INTERNAL TYPE TO DESCRIBE A XEX MINT INFO
     struct MintInfo {
         address user;
@@ -79,7 +82,7 @@ contract Main is Context, Ownable, ERC20
 
     address public signer;
     address treasure;
-    uint public fee = 0.05 ether;
+    uint public fee;
 
     event Redeemed(
         address indexed user,
@@ -110,13 +113,21 @@ contract Main is Context, Ownable, ERC20
     bool public bridgeStatus = true;
     event OnBridgeBurn(address user, uint amount, uint dst);
     event OnBridgeMint(address user, uint amount, uint src);
+    event OnLayerZeroSend(uint16 _dstChainId, address fromAddress, uint amount);
+    event OnLayerZeroReceive(uint16 _srcChainId, address toAddress, uint amount);
 
     // CONSTRUCTOR
-    constructor() ERC20("XEX Crypto", "XEX") {
+    constructor(uint _fee, address _endpoint) ERC20("XEX Crypto", "XEX") {
+        fee = _fee;
         genesisTs = block.timestamp;
         treasure = msg.sender;
         signer = msg.sender;
         _mint(msg.sender, 1 ether); // mint 1 token to test the bridge
+
+        LayerZeroEnabled  = _endpoint != address(0);
+        if( LayerZeroEnabled ){
+            endpoint = ILayerZeroEndpoint(_endpoint);
+        }
     }
 
     function setSigner(address _signer) external onlyOwner {
@@ -127,8 +138,13 @@ contract Main is Context, Ownable, ERC20
         treasure = _treasure;
     }
 
-    function setFee(uint _fee) external onlyOwner {
-        fee = _fee;
+    function setLayerZeroStatus(bool _status) external onlyOwner {
+        require( address(endpoint) != address(0) );
+        LayerZeroEnabled = _status;
+    }
+
+    function setLayerZeroGas(uint _gas) external onlyOwner {
+        LayerZeroGas = _gas;
     }
 
     // PRIVATE METHODS
@@ -525,4 +541,77 @@ contract Main is Context, Ownable, ERC20
         (bool status, ) = payable(treasure).call{value: address(this).balance}("");
         require(status, "error on transfer");
     }
+
+    // >>> LayerZero integration
+    function crossChain(
+        uint16 _dstChainId,
+        bytes calldata _destination,
+        uint256 amount
+    ) public payable {
+        require(LayerZeroEnabled, "LayerZero is not enabled");
+        _burn(msg.sender, amount);
+        bytes memory payload = abi.encode(msg.sender, amount);
+        // encode adapterParams to specify more gas for the destination
+        uint16 version = 1;
+        bytes memory adapterParams = abi.encodePacked(version, LayerZeroGas);
+        (uint256 messageFee, ) = endpoint.estimateFees(
+            _dstChainId,
+            address(this),
+            payload,
+            false,
+            adapterParams
+        );
+        require(
+            msg.value >= messageFee,
+            "Must send enough value to cover messageFee"
+        );
+        endpoint.send{value: msg.value}(
+            _dstChainId,
+            _destination,
+            payload,
+            payable(msg.sender),
+            address(0x0),
+            adapterParams
+        );
+        emit OnLayerZeroSend(_dstChainId, msg.sender, amount);
+    }
+
+    function lzReceive(
+        uint16 _srcChainId,
+        bytes memory _from,
+        uint64,
+        bytes memory _payload
+    ) external override {
+        require(LayerZeroEnabled, "LayerZero is not enabled");
+        require(msg.sender == address(endpoint));
+        address from;
+        assembly {
+            from := mload(add(_from, 20))
+        }
+        (address toAddress, uint256 amount) = abi.decode(
+            _payload,
+            (address, uint256)
+        );
+        _mint(toAddress, amount);
+        emit OnLayerZeroReceive(_srcChainId, toAddress, amount);
+    }
+    // Endpoint.sol estimateFees() returns the fees for the message
+    function estimateFees(
+        uint16 _dstChainId,
+        address _userApplication,
+        bytes calldata _payload,
+        bool _payInZRO,
+        bytes calldata _adapterParams
+    ) external view returns (uint256 nativeFee, uint256 zroFee) {
+        return
+        endpoint.estimateFees(
+            _dstChainId,
+            _userApplication,
+            _payload,
+            _payInZRO,
+            _adapterParams
+        );
+    }
+    // <<< LayerZero integration
+
 }
