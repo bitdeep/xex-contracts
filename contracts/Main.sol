@@ -117,7 +117,7 @@ contract Main is Context, Ownable, ERC20, ILayerZeroReceiver
     event OnLayerZeroReceive(uint16 _srcChainId, address toAddress, uint amount);
 
     // CONSTRUCTOR
-    constructor(uint _fee, address _endpoint) ERC20("XEX Crypto", "XEX") {
+    constructor(uint _fee, address _endpoint) ERC20("Test Crypto", "TEST") {
         fee = _fee;
         genesisTs = block.timestamp;
         treasure = msg.sender;
