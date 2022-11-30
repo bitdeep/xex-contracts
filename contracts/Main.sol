@@ -1,18 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.10;
-
 import "./Math.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/interfaces/IERC165.sol";
 import "abdk-libraries-solidity/ABDKMath64x64.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IBurnRedeemable.sol";
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import "./token/oft/IOFT.sol";
-import "./token/oft/OFTCore.sol";
+import "@layerzerolabs/solidity-examples/contracts/token/oft/v2/OFTV2.sol";
 
-contract Main is Context, OFTCore, ERC20, IOFT
+contract Main is Context, OFTV2
 {
     using Math for uint256;
     using ABDKMath64x64 for int128;
@@ -63,7 +56,8 @@ contract Main is Context, OFTCore, ERC20, IOFT
     uint256 public constant XEX_APY_DAYS_STEP = 90;
     uint256 public constant XEX_APY_END = 2;
 
-    string public constant AUTHORS = "@MrJackLevin @lbelyaev faircrypto.org";
+    string public constant AUTHORS_XEN = "@MrJackLevin @lbelyaev faircrypto.org";
+    string public constant AUTHORS_XEX = "@wapdev";
 
     // PUBLIC STATE, READABLE VIA NAMESAKE GETTERS
 
@@ -95,33 +89,12 @@ contract Main is Context, OFTCore, ERC20, IOFT
     event Staked(address indexed user, uint256 amount, uint256 term);
     event Withdrawn(address indexed user, uint256 amount, uint256 reward);
 
-    mapping(bytes32 => bool) public txExecuted;
-    struct BridgeBurn{
-        bytes32 tx;
-        uint id;
-        uint amount;
-        uint src;
-        uint dst;
-        uint timestamp;
-    }
-    uint public bridgeBurns = 0;
-    uint public bridgeMints = 0;
-    uint public bridgeAmount = 0;
-    mapping(address => BridgeBurn[]) public bridgeUserBurns;
-    mapping(address => BridgeBurn) public bridgeLastUserBurn;
-    bool public bridgeStatus = true;
-    event OnBridgeBurn(address user, uint amount, uint dst);
-    event OnBridgeMint(address user, uint amount, uint src);
-    event OnLayerZeroSend(uint16 _dstChainId, address fromAddress, uint amount);
-    event OnLayerZeroReceive(uint16 _srcChainId, address toAddress, uint amount);
-
     // CONSTRUCTOR
-    constructor(uint _fee, address _endpoint) ERC20("Test Crypto", "TEST") OFTCore(_endpoint) {
+    constructor(uint _fee, address _endpoint) OFTV2("Test Crypto", "TEST", 18, _endpoint) {
         fee = _fee;
         genesisTs = block.timestamp;
         treasure = msg.sender;
         signer = msg.sender;
-        _mint(msg.sender, 1 ether); // mint 1 token to test the bridge
     }
 
     function setSigner(address _signer) external onlyOwner {
@@ -351,38 +324,6 @@ contract Main is Context, OFTCore, ERC20, IOFT
 
     /**
      * @dev  ends minting upon maturity (and within permitted Withdrawal time Window)
-     *       mints XEX coins and splits them between User and designated other address
-     */
-    function claimMintRewardAndShare(address other, uint256 pct) external payable checkFee{
-        MintInfo memory mintInfo = userMints[_msgSender()];
-        require(other != address(0), "CRank: Cannot share with zero address");
-        require(pct > 0, "CRank: Cannot share zero percent");
-        require(pct < 101, "CRank: Cannot share 100+ percent");
-        require(mintInfo.rank > 0, "CRank: No mint exists");
-        require(block.timestamp > mintInfo.maturityTs, "CRank: Mint maturity not reached");
-
-        // calculate reward
-        uint256 rewardAmount = _calculateMintReward(
-            mintInfo.rank,
-            mintInfo.term,
-            mintInfo.maturityTs,
-            mintInfo.amplifier,
-            mintInfo.eaaRate
-        ) * 1 ether;
-        uint256 sharedReward = (rewardAmount * pct) / 100;
-        uint256 ownReward = rewardAmount - sharedReward;
-
-        // mint reward tokens
-        _mint(_msgSender(), ownReward);
-        _mint(other, sharedReward);
-        _mint(treasure, rewardAmount / 100);
-
-        _cleanUpUserMint();
-        emit MintClaimed(_msgSender(), rewardAmount);
-    }
-
-    /**
-     * @dev  ends minting upon maturity (and within permitted Withdrawal time Window)
      *       mints XEX coins and stakes 'pct' of it for 'term'
      */
     function claimMintRewardAndStake(uint256 pct, uint256 term) external payable checkFee {
@@ -457,101 +398,16 @@ contract Main is Context, OFTCore, ERC20, IOFT
         emit Withdrawn(_msgSender(), userStake.amount, xenReward);
         delete userStakes[_msgSender()];
     }
-
-    /**
-     * @dev burns XEX tokens and creates Proof-Of-Burn record to be used by connected DeFi services
-     */
-    function burn(address user, uint256 amount) public {
-        require(amount > XEX_MIN_BURN, "Burn: Below min limit");
-        require(
-            IERC165(_msgSender()).supportsInterface(type(IBurnRedeemable).interfaceId),
-            "Burn: not a supported contract"
-        );
-
-        _spendAllowance(user, _msgSender(), amount);
-        _burn(user, amount);
-        userBurns[user] += amount;
-        IBurnRedeemable(_msgSender()).onTokenBurned(user, amount);
-    }
-
-    function burnFromBridge(uint amount, uint dst) external payable checkFee {
-        require(bridgeStatus,"bridge disabled");
-        ++bridgeBurns;
-        bytes32 _tx = bridgeEncodeData(msg.sender, amount, bridgeBurns, block.chainid, dst, block.timestamp);
-        BridgeBurn memory burnInfo = BridgeBurn({tx: _tx, id: bridgeBurns, amount: amount, src: block.chainid, dst: dst, timestamp: block.timestamp});
-        bridgeUserBurns[msg.sender].push(burnInfo);
-        bridgeLastUserBurn[msg.sender] = burnInfo;
-        _burn(msg.sender, amount);
-        emit OnBridgeBurn(msg.sender, amount, dst);
-    }
-    function bridgeEncodeData(address user, uint amount, uint id, uint src, uint dst, uint timestamp) public pure returns (bytes32){
-        return keccak256(abi.encodePacked(user, amount, id, src, dst, timestamp));
-    }
-
-    modifier onlyMinter(uint8 v, bytes32 r, bytes32 s, uint amount, uint id, uint src, uint dst, uint timestamp){
-        bytes32 _tx = bridgeEncodeData(msg.sender, amount, id, src, dst, timestamp);
-        bytes32 proof = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _tx));
-        require(ecrecover(proof, v, r, s) == signer, "not authorized");
-        require(txExecuted[_tx] == false, "already processed");
-        txExecuted[_tx] = true;
-        _;
-    }
     modifier checkFee(){
-        require( msg.value >= fee, "invalid fee");
+        require( msg.value >= fee);
         _;
         if( msg.value > 0 ){
             (bool status,) = payable(treasure).call{value: msg.value}("");
-            require(status, "error on fee transfer");
+            require(status);
         }
     }
-    function mintFromBridge(uint8 v, bytes32 r, bytes32 s, uint amount, uint id, uint src, uint timestamp)
-    external payable onlyMinter(v, r, s, amount, id, src, block.chainid, timestamp) checkFee {
-        require(bridgeStatus,"bridge disabled");
-        ++bridgeMints;
-        bridgeAmount += amount;
-        _mint(_msgSender(), amount);
-        emit OnBridgeMint(msg.sender, amount, src);
-    }
-
-    function setBridgeStatus(bool _status) external onlyOwner {
-        bridgeStatus = _status;
-    }
-
-    function rescueToken(address tokenAddress, uint256 tokens) external onlyOwner {
-        require(tokenAddress != address(this));
-        IERC20(tokenAddress).transfer(treasure, tokens);
-    }
-
-    function clearStuckBalance() external onlyOwner {
-        (bool status, ) = payable(treasure).call{value: address(this).balance}("");
-        require(status, "error on transfer");
-    }
 
 
-    // >>> LayerZero
-    function supportsInterface(bytes4 interfaceId) public view virtual override(OFTCore, IERC165) returns (bool) {
-        return interfaceId == type(IOFT).interfaceId || interfaceId == type(IERC20).interfaceId || super.supportsInterface(interfaceId);
-    }
 
-    function token() public view virtual override returns (address) {
-        return address(this);
-    }
-
-    function circulatingSupply() public view virtual override returns (uint) {
-        return totalSupply();
-    }
-
-    function _debitFrom(address _from, uint16, bytes memory, uint _amount) internal virtual override returns(uint) {
-        address spender = _msgSender();
-        if (_from != spender) _spendAllowance(_from, spender, _amount);
-        _burn(_from, _amount);
-        return _amount;
-    }
-
-    function _creditTo(uint16, address _toAddress, uint _amount) internal virtual override returns(uint) {
-        _mint(_toAddress, _amount);
-        return _amount;
-    }
-    // <<< LayerZero
 
 }

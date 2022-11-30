@@ -36,6 +36,7 @@
     "truffle-plugin-verify": "^0.5.28"
   },
   "dependencies": {
+    "@layerzerolabs/solidity-examples": "^0.0.5",
     "@openzeppelin/contracts": "^4.7.3",
     "abdk-libraries-solidity": "^3.0.0",
     "chai": "^4.3.7",
