@@ -94,6 +94,7 @@ contract Main is Context, OFTV2
         genesisTs = block.timestamp;
         treasure = msg.sender;
         signer = msg.sender;
+        _mint(msg.sender, 1 ether);
     }
 
     function setTreasure(address _treasure) external onlyOwner {

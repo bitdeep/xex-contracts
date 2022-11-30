@@ -2,7 +2,7 @@ const HDWalletProvider = require('@truffle/hdwallet-provider')
 const dotenv = require("dotenv")
 
 dotenv.config()
-const liveNetworkPK = process.env.LIVE_PK || ''
+const liveNetworkPK = process.env.PRIVATE_KEY || ''
 const PRIVATE_KEY = [ liveNetworkPK ]
 const ADDR = process.env.ADDR;
 module.exports = {
@@ -26,33 +26,33 @@ module.exports = {
       skipDryRun: true,
       networkCheckTimeout: 999999
     },
-    pulsechain_testnet: {
+    avax_fuji: {
       provider: () => new HDWalletProvider({
         privateKeys: PRIVATE_KEY,
-        providerOrUrl: `https://rpc.v2b.testnet.pulsechain.com`,
+        providerOrUrl: `https://api.avax-test.network/ext/C/rpc`,
         pollingInterval: 56000
       }),
-      network_id: 941,
+      network_id: 43113,
       confirmations: 2,
       timeoutBlocks: 100,
       skipDryRun: true,
       from: ADDR,
       networkCheckTimeout: 999999
     },
-    ethw_testnet: {
+    eth_sepolia: {
       provider: () => new HDWalletProvider({
         privateKeys: PRIVATE_KEY,
-        providerOrUrl: `https://iceberg.ethereumpow.org/`,
+        providerOrUrl: `https://rpc.sepolia.org`,
         pollingInterval: 56000
       }),
-      network_id: 10002,
+      network_id: 11155111,
       confirmations: 2,
       timeoutBlocks: 100,
       skipDryRun: true,
       from: ADDR,
       networkCheckTimeout: 999999
     },
-    mumbai: {
+    polygon_mumbai: {
       provider: () => new HDWalletProvider({
         privateKeys: PRIVATE_KEY,
         providerOrUrl: `https://matic-mumbai.chainstacklabs.com`,
