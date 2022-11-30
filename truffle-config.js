@@ -29,7 +29,7 @@ module.exports = {
     avax_fuji: {
       provider: () => new HDWalletProvider({
         privateKeys: PRIVATE_KEY,
-        providerOrUrl: `https://api.avax-test.network/ext/C/rpc`,
+        providerOrUrl: `https://api.avax-test.network/ext/bc/C/rpc`,
         pollingInterval: 56000
       }),
       network_id: 43113,

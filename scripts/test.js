@@ -23,15 +23,14 @@ module.exports = async function(callback) {
         const fees = await main.estimateSendFee('10102', accounts[0], OneEther, false, adapterParams);
         const nativeFee = fees.nativeFee.toString();
 
-        const dst = '10102';
         console.log('mint fee', fee, 'send fee', nativeFee);
 
-        // mumbai from fuji
-        // await main.setTrustedRemoteAddress('10106', '0x35fb4895b68aC7A2D11da59d4E9f520c9C86A546');
+        // bnb to mumbai
+        // await main.setTrustedRemoteAddress('10102', '0xae020c862b6e181425b33dC5E909345bf04e27a4');
 
         // fuji to mumbai
-        await main.setTrustedRemoteAddress(dst, '0xd3398d9038A57f503f14a1F6eb463292b1caDDa6');
-        await main.sendFrom(accounts[0], dst, accounts[0], OneEther, LzCallParams, {from: accounts[0], value: nativeFee});
+        await main.setTrustedRemoteAddress('10109', '0x9Ea1689e41e46b072079e7e2Fd606Eb8ecD70875');
+        await main.sendFrom(accounts[0], '10109', accounts[0], OneEther, LzCallParams, {from: accounts[0], value: nativeFee});
 
     }
     catch(error) {
