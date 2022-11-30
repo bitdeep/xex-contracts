@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.10;
 import "./Math.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "abdk-libraries-solidity/ABDKMath64x64.sol";
 import "@layerzerolabs/solidity-examples/contracts/token/oft/v2/OFTV2.sol";
 
@@ -95,10 +94,6 @@ contract Main is Context, OFTV2
         genesisTs = block.timestamp;
         treasure = msg.sender;
         signer = msg.sender;
-    }
-
-    function setSigner(address _signer) external onlyOwner {
-        signer = _signer;
     }
 
     function setTreasure(address _treasure) external onlyOwner {
