@@ -39,13 +39,26 @@ module.exports = {
       from: ADDR,
       networkCheckTimeout: 999999
     },
-    eth_sepolia: {
+    eth_goerli: {
       provider: () => new HDWalletProvider({
         privateKeys: PRIVATE_KEY,
-        providerOrUrl: `https://rpc.sepolia.org`,
+        providerOrUrl: `https://rpc.ankr.com/eth_goerli`,
         pollingInterval: 56000
       }),
-      network_id: 11155111,
+      network_id: 5,
+      confirmations: 2,
+      timeoutBlocks: 100,
+      skipDryRun: true,
+      from: ADDR,
+      networkCheckTimeout: 999999
+    },
+    ftm_testnet: {
+      provider: () => new HDWalletProvider({
+        privateKeys: PRIVATE_KEY,
+        providerOrUrl: `https://rpc.ankr.com/fantom_testnet`,
+        pollingInterval: 56000
+      }),
+      network_id: 4002,
       confirmations: 2,
       timeoutBlocks: 100,
       skipDryRun: true,
@@ -55,7 +68,7 @@ module.exports = {
     polygon_mumbai: {
       provider: () => new HDWalletProvider({
         privateKeys: PRIVATE_KEY,
-        providerOrUrl: `https://matic-mumbai.chainstacklabs.com`,
+        providerOrUrl: `https://rpc.ankr.com/polygon_mumbai`,
         pollingInterval: 56000
       }),
       network_id: 80001,
