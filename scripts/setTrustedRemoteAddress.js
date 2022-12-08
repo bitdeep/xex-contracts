@@ -6,7 +6,7 @@ module.exports = async function(callback) {
         const main = await Main.deployed()
         // bsc_testnet
         console.log('bsc_testnet');
-        await main.setTrustedRemoteAddress('10109', '0xaFe53b047f9338DF9e663ba4E52E9B04861E9593');
+        await main.setTrustedRemoteAddress('10102', '0xaFe53b047f9338DF9e663ba4E52E9B04861E9593');
         // avax_fuji
         console.log('avax_fuji');
         await main.setTrustedRemoteAddress('10106', '0x5F34098e0a3A179c084466827697b744A21547Aa');
