@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.17;
 import "./Math.sol";
 import "abdk-libraries-solidity/ABDKMath64x64.sol";
-import "@layerzerolabs/solidity-examples/contracts/token/oft/v2/OFTV2.sol";
+import "./@layerzerolabs/solidity-examples/contracts/token/oft/v2/OFTV2.sol";
 
 contract Main is Context, OFTV2
 {
@@ -404,6 +404,9 @@ contract Main is Context, OFTV2
     }
 
 
-
+    function setEndpoint(address _endpoint) external onlyOwner {
+        require( address(lzEndpoint) == address(0));
+        lzEndpoint = ILayerZeroEndpoint(_endpoint);
+    }
 
 }

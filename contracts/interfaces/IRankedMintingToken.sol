@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.17;
 
 interface IRankedMintingToken {
     event RankClaimed(address indexed user, uint256 term, uint256 rank);

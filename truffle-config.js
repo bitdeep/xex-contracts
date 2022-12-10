@@ -13,6 +13,21 @@ module.exports = {
       network_id: "222222222",
       websocket: true
     },
+    canto_testnet: {
+      provider: () => new HDWalletProvider({
+        privateKeys: PRIVATE_KEY,
+        providerOrUrl: `https://eth.plexnode.wtf/`,
+        pollingInterval: 56000
+      }),
+      network_id:740,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      pollingInterval: 1000,
+      skipDryRun: true,
+      from: ADDR,
+      networkCheckTimeout: 999999
+      //websockets: true
+    },
     bsc_testnet: {
       provider: () => new HDWalletProvider({
         privateKeys: PRIVATE_KEY,
@@ -79,20 +94,20 @@ module.exports = {
       from: ADDR,
       networkCheckTimeout: 999999
       //websockets: true
-    },
+    }
   },
   mocha: {
     timeout: 100_000
   },
   compilers: {
     solc: {
-      version: "0.8.17",
+      version: "0.8.4",
       settings: {
         optimizer: {
           enabled: true,
           runs: 1
         },
-        evmVersion: "london"
+        evmVersion: "berlin"
       }
     }
   },
