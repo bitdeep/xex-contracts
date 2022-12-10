@@ -6,19 +6,19 @@ module.exports = async function(callback) {
         const main = await Main.deployed()
         // bsc_testnet
         console.log('bsc_testnet');
-        await main.setTrustedRemoteAddress('10102', '0xaFe53b047f9338DF9e663ba4E52E9B04861E9593');
+        await main.setTrustedRemoteAddress('10102', '0xa533fA4376e9996D7902909a174A52058032Cf84');
         // avax_fuji
         console.log('avax_fuji');
-        await main.setTrustedRemoteAddress('10106', '0x5F34098e0a3A179c084466827697b744A21547Aa');
+        await main.setTrustedRemoteAddress('10106', '0x8D3f803Cda3517D355d1c5ae78e2ea10B9Acdb29');
         // eth_goerli
         console.log('eth_goerli');
-        await main.setTrustedRemoteAddress('10121', '0xB9755872F937D4ac44bdDa9565F2f7997c4d551e');
+        await main.setTrustedRemoteAddress('10121', '0x92358EBA078b90Ef2F0e81c5A04A4ff0A1162bac');
         // ftm_testnet
         console.log('ftm_testnet');
-        await main.setTrustedRemoteAddress('10112', '0xaFd37A86044528010d0E70cDc58d0A9B5Eb03206');
+        await main.setTrustedRemoteAddress('10112', '0x6AeCf42F748eaF4335ae9362591619B6D9F68870');
         // polygon_mumbai
         console.log('polygon_mumbai');
-        await main.setTrustedRemoteAddress('10109', '0x6069fbFe03605BDd08D44ee47481E51A4c9d8690');
+        await main.setTrustedRemoteAddress('10109', '0x4DFBD99C0660c5C42593Bc213A4C9B18fB21BBFa');
     }
     catch(error) {
         console.log(error.toString())

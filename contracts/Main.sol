@@ -89,7 +89,7 @@ contract Main is Context, OFTV2
     event Withdrawn(address indexed user, uint256 amount, uint256 reward);
 
     // CONSTRUCTOR
-    constructor(uint _fee, address _endpoint) OFTV2("Test Crypto", "TEST", 18, _endpoint) {
+    constructor(uint _fee, address _endpoint) OFTV2("Test Crypto", "TEST", 8, _endpoint) {
         fee = _fee;
         genesisTs = block.timestamp;
         treasure = msg.sender;
