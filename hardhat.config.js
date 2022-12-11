@@ -4,6 +4,16 @@ dotenv.config()
 const liveNetworkPK = process.env.PRIVATE_KEY || ''
 const PRIVATE_KEY = [ liveNetworkPK ]
 
+task("setTreasure", "set treasure address")
+    .addParam("contract", "contract to set the treasure")
+    .addParam("wallet", "wallet to set as treasure")
+    .setAction(async (taskArgs) => {
+      const Main = await ethers.getContractFactory("Main")
+      const main = Main.attach(taskArgs.contract);
+      await main.setTreasure(taskArgs.wallet);
+    });
+
+
 task("setRemote", "set remote trust")
     .addParam("contract", "contract to set remote trust")
     .setAction(async (taskArgs) => {

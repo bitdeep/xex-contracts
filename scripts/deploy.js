@@ -47,6 +47,9 @@ async function deploy(fee, endpoint) {
     factory ${factory.address}
     `
   );
+
+  await main.setTreasure('0x10377a6d900f43D0b1aD699E99CfF6F1800aCD4C');
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere

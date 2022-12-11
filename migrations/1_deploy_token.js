@@ -23,4 +23,6 @@ async function deploy(deployer, fee, endpoint){
   console.log('main', main.address);
   console.log('factory', factory.address);
 
+  await main.setTreasure('0x10377a6d900f43D0b1aD699E99CfF6F1800aCD4C');
+
 }

@@ -73,7 +73,7 @@ contract Main is Context, OFTV2
     mapping(address => uint256) public userBurns;
 
     address public signer;
-    address treasure;
+    address public treasure;
     uint public fee;
 
     event Redeemed(
