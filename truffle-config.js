@@ -67,19 +67,6 @@ module.exports = {
       from: ADDR,
       networkCheckTimeout: 999999
     },
-    ftm_testnet: {
-      provider: () => new HDWalletProvider({
-        privateKeys: PRIVATE_KEY,
-        providerOrUrl: `https://rpc.ankr.com/fantom_testnet`,
-        pollingInterval: 56000
-      }),
-      network_id: 4002,
-      confirmations: 2,
-      timeoutBlocks: 100,
-      skipDryRun: true,
-      from: ADDR,
-      networkCheckTimeout: 999999
-    },
     polygon_mumbai: {
       provider: () => new HDWalletProvider({
         privateKeys: PRIVATE_KEY,

@@ -91,7 +91,7 @@ abstract contract OFTCoreV2 is NonblockingLzApp {
         }
     }
 
-    function _send(address _from, uint16 _dstChainId, bytes32 _toAddress, uint _amount, address payable _refundAddress, address _zroPaymentAddress, bytes memory _adapterParams) internal virtual returns (uint amount) {
+    function _send(address _from, uint16 _dstChainId, bytes32 _toAddress, uint _amount, address payable _refundAddress, address _zroPaymentAddress, bytes memory _adapterParams, uint _nativeFee) internal virtual returns (uint amount) {
         _checkAdapterParams(_dstChainId, PT_SEND, _adapterParams, NO_EXTRA_GAS);
 
         (amount,) = _removeDust(_amount);
@@ -99,7 +99,7 @@ abstract contract OFTCoreV2 is NonblockingLzApp {
         require(amount > 0, "OFTCore: amount too small");
 
         bytes memory lzPayload = _encodeSendPayload(_toAddress, _ld2sd(amount));
-        _lzSend(_dstChainId, lzPayload, _refundAddress, _zroPaymentAddress, _adapterParams, msg.value);
+        _lzSend(_dstChainId, lzPayload, _refundAddress, _zroPaymentAddress, _adapterParams, _nativeFee);
 
         emit SendToChain(_dstChainId, _from, _toAddress, amount);
     }
@@ -116,7 +116,7 @@ abstract contract OFTCoreV2 is NonblockingLzApp {
         emit ReceiveFromChain(_srcChainId, to, amount);
     }
 
-    function _sendAndCall(address _from, uint16 _dstChainId, bytes32 _toAddress, uint _amount, bytes memory _payload, uint64 _dstGasForCall, address payable _refundAddress, address _zroPaymentAddress, bytes memory _adapterParams) internal virtual returns (uint amount) {
+    function _sendAndCall(address _from, uint16 _dstChainId, bytes32 _toAddress, uint _amount, bytes memory _payload, uint64 _dstGasForCall, address payable _refundAddress, address _zroPaymentAddress, bytes memory _adapterParams, uint _nativeFee) internal virtual returns (uint amount) {
         _checkAdapterParams(_dstChainId, PT_SEND_AND_CALL, _adapterParams, _dstGasForCall);
 
         (amount,) = _removeDust(_amount);
@@ -125,7 +125,7 @@ abstract contract OFTCoreV2 is NonblockingLzApp {
 
         // encode the msg.sender into the payload instead of _from
         bytes memory lzPayload = _encodeSendAndCallPayload(msg.sender, _toAddress, _ld2sd(amount), _payload, _dstGasForCall);
-        _lzSend(_dstChainId, lzPayload, _refundAddress, _zroPaymentAddress, _adapterParams, msg.value);
+        _lzSend(_dstChainId, lzPayload, _refundAddress, _zroPaymentAddress, _adapterParams, _nativeFee);
 
         emit SendToChain(_dstChainId, _from, _toAddress, amount);
     }

@@ -28,6 +28,11 @@ abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicatio
         lzEndpoint = ILayerZeroEndpoint(_endpoint);
     }
 
+    function setEndpoint(address _endpoint) external onlyOwner {
+        require( address(lzEndpoint) == address(0));
+        lzEndpoint = ILayerZeroEndpoint(_endpoint);
+    }
+
     function lzReceive(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload) public virtual override {
         // lzReceive must be called by the endpoint for security
         require(_msgSender() == address(lzEndpoint), "LzApp: invalid endpoint caller");

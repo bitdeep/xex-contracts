@@ -25,8 +25,6 @@ task("setRemote", "set remote trust")
       await setTrustedRemoteAddress(taskArgs.address, '10106', '0x8D3f803Cda3517D355d1c5ae78e2ea10B9Acdb29');
       // eth_goerli
       await setTrustedRemoteAddress(taskArgs.address, '10121', '0x92358EBA078b90Ef2F0e81c5A04A4ff0A1162bac');
-      // ftm_testnet
-      await setTrustedRemoteAddress(taskArgs.address, '10112', '0x6AeCf42F748eaF4335ae9362591619B6D9F68870');
       // polygon_mumbai
       await setTrustedRemoteAddress(taskArgs.address, '10109', '0x4DFBD99C0660c5C42593Bc213A4C9B18fB21BBFa');
 
@@ -62,12 +60,6 @@ module.exports = {
     },
     eth_testnet: {
       url: `https://rpc.ankr.com/eth_goerli`,
-      accounts: [`${PRIVATE_KEY}`],
-      live: true,
-      saveDeployments: true,
-    },
-    ftm_testnet: {
-      url: `https://rpc.ankr.com/fantom_testnet`,
       accounts: [`${PRIVATE_KEY}`],
       live: true,
       saveDeployments: true,

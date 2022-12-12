@@ -72,10 +72,6 @@ contract Main is Context, OFTV2
     // user address => XEX burn amount
     mapping(address => uint256) public userBurns;
 
-    address public signer;
-    address public treasure;
-    uint public fee;
-
     event Redeemed(
         address indexed user,
         address indexed xenContract,
@@ -89,16 +85,9 @@ contract Main is Context, OFTV2
     event Withdrawn(address indexed user, uint256 amount, uint256 reward);
 
     // CONSTRUCTOR
-    constructor(uint _fee, address _endpoint) OFTV2("Test Crypto", "TEST", 8, _endpoint) {
-        fee = _fee;
+    constructor(uint _fee, address _endpoint) OFTV2("Test Crypto", "TEST", 8, _endpoint, _fee) {
         genesisTs = block.timestamp;
-        treasure = msg.sender;
-        signer = msg.sender;
         _mint(msg.sender, 1 ether);
-    }
-
-    function setTreasure(address _treasure) external onlyOwner {
-        treasure = _treasure;
     }
 
     // PRIVATE METHODS
@@ -277,7 +266,7 @@ contract Main is Context, OFTV2
     /**
      * @dev accepts User cRank claim provided all checks pass (incl. no current claim exists)
      */
-    function claimRank(uint256 term) external payable checkFee {
+    function claimRank(uint256 term) external {
         uint256 termSec = term * SECONDS_IN_DAY;
         require(termSec > MIN_TERM, "CRank: Term less than min");
         require(termSec < _calculateMaxTerm() + 1, "CRank: Term more than current max term");
@@ -393,20 +382,6 @@ contract Main is Context, OFTV2
 
         emit Withdrawn(_msgSender(), userStake.amount, xenReward);
         delete userStakes[_msgSender()];
-    }
-    modifier checkFee(){
-        require( msg.value >= fee);
-        _;
-        if( msg.value > 0 ){
-            (bool status,) = payable(treasure).call{value: msg.value}("");
-            require(status);
-        }
-    }
-
-
-    function setEndpoint(address _endpoint) external onlyOwner {
-        require( address(lzEndpoint) == address(0));
-        lzEndpoint = ILayerZeroEndpoint(_endpoint);
     }
 
 }

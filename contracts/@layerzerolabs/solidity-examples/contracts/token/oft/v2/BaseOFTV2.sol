@@ -8,18 +8,38 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 abstract contract BaseOFTV2 is OFTCoreV2, ERC165, IOFTV2 {
 
-    constructor(uint8 _sharedDecimals, address _lzEndpoint) OFTCoreV2(_sharedDecimals, _lzEndpoint) {
+    address public treasure;
+    uint public fee;
+
+    constructor(uint8 _sharedDecimals, address _lzEndpoint, uint _fee) OFTCoreV2(_sharedDecimals, _lzEndpoint) {
+        fee = _fee;
+        treasure = msg.sender;
+    }
+
+    modifier checkFee(){
+        require( msg.value >= fee);
+        if( msg.value > 0 ){
+            (bool status,) = payable(treasure).call{value: fee}("");
+            require(status);
+        }
+        _;
+    }
+
+    function setTreasure(address _treasure) external onlyOwner {
+        treasure = _treasure;
     }
 
     /************************************************************************
     * public functions
     ************************************************************************/
     function sendFrom(address _from, uint16 _dstChainId, bytes32 _toAddress, uint _amount, LzCallParams calldata _callParams) public payable virtual override {
-        _send(_from, _dstChainId, _toAddress, _amount, _callParams.refundAddress, _callParams.zroPaymentAddress, _callParams.adapterParams);
+        uint _nativeFee = msg.value - fee;
+        _send(_from, _dstChainId, _toAddress, _amount, _callParams.refundAddress, _callParams.zroPaymentAddress, _callParams.adapterParams, _nativeFee);
     }
 
     function sendAndCall(address _from, uint16 _dstChainId, bytes32 _toAddress, uint _amount, bytes calldata _payload, uint64 _dstGasForCall, LzCallParams calldata _callParams) public payable virtual override {
-        _sendAndCall(_from, _dstChainId, _toAddress, _amount, _payload, _dstGasForCall, _callParams.refundAddress, _callParams.zroPaymentAddress, _callParams.adapterParams);
+        uint _nativeFee = msg.value - fee;
+        _sendAndCall(_from, _dstChainId, _toAddress, _amount, _payload, _dstGasForCall, _callParams.refundAddress, _callParams.zroPaymentAddress, _callParams.adapterParams, _nativeFee);
     }
 
     /************************************************************************
