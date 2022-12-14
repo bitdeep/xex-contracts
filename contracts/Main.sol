@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.4;
 import "./Math.sol";
 import "abdk-libraries-solidity/ABDKMath64x64.sol";
 import "./@layerzerolabs/solidity-examples/contracts/token/oft/v2/OFTV2.sol";
@@ -55,8 +55,8 @@ contract Main is Context, OFTV2
     uint256 public constant XEX_APY_DAYS_STEP = 90;
     uint256 public constant XEX_APY_END = 2;
 
-    string public constant AUTHORS_XEN = "@MrJackLevin @lbelyaev faircrypto.org";
-    string public constant AUTHORS_XEX = "@wapdev";
+//    string public constant AUTHORS_XEN = "@MrJackLevin @lbelyaev faircrypto.org";
+//    string public constant AUTHORS_XEX = "@wapdev";
 
     // PUBLIC STATE, READABLE VIA NAMESAKE GETTERS
 
@@ -268,9 +268,9 @@ contract Main is Context, OFTV2
      */
     function claimRank(uint256 term) external {
         uint256 termSec = term * SECONDS_IN_DAY;
-        require(termSec > MIN_TERM, "CRank: Term less than min");
-        require(termSec < _calculateMaxTerm() + 1, "CRank: Term more than current max term");
-        require(userMints[_msgSender()].rank == 0, "CRank: Mint already in progress");
+        require(termSec > MIN_TERM);
+        require(termSec < _calculateMaxTerm() + 1);
+        require(userMints[_msgSender()].rank == 0);
         // create and store new MintInfo
         MintInfo memory mintInfo = MintInfo({
         user : _msgSender(),
@@ -290,8 +290,8 @@ contract Main is Context, OFTV2
      */
     function claimMintReward() public payable checkFee {
         MintInfo memory mintInfo = userMints[_msgSender()];
-        require(mintInfo.rank > 0, "CRank: No mint exists");
-        require(block.timestamp > mintInfo.maturityTs, "CRank: Mint maturity not reached");
+        require(mintInfo.rank > 0);
+        require(block.timestamp > mintInfo.maturityTs);
         // calculate reward and mint tokens
         uint256 rewardAmount = _calculateMintReward(
             mintInfo.rank,
@@ -314,9 +314,9 @@ contract Main is Context, OFTV2
     function claimMintRewardAndStake(uint256 pct, uint256 term) external payable checkFee {
         MintInfo memory mintInfo = userMints[_msgSender()];
         // require(pct > 0, "CRank: Cannot share zero percent");
-        require(pct < 101, "CRank: Cannot share >100 percent");
-        require(mintInfo.rank > 0, "CRank: No mint exists");
-        require(block.timestamp > mintInfo.maturityTs, "CRank: Mint maturity not reached");
+        require(pct < 101);
+        require(mintInfo.rank > 0);
+        require(block.timestamp > mintInfo.maturityTs);
         // calculate reward
         uint256 rewardAmount = _calculateMintReward(
             mintInfo.rank,
@@ -336,10 +336,10 @@ contract Main is Context, OFTV2
 
         // nothing to burn since we haven't minted this part yet
         // stake extra tokens part
-        require(stakedReward > XEX_MIN_STAKE, "XEX: Below min stake");
-        require(term * SECONDS_IN_DAY > MIN_TERM, "XEX: Below min stake term");
-        require(term * SECONDS_IN_DAY < MAX_TERM_END + 1, "XEX: Above max stake term");
-        require(userStakes[_msgSender()].amount == 0, "XEX: stake exists");
+        require(stakedReward > XEX_MIN_STAKE);
+        require(term * SECONDS_IN_DAY > MIN_TERM);
+        require(term * SECONDS_IN_DAY < MAX_TERM_END + 1);
+        require(userStakes[_msgSender()].amount == 0);
 
         _createStake(stakedReward, term);
         emit Staked(_msgSender(), stakedReward, term);
@@ -349,11 +349,11 @@ contract Main is Context, OFTV2
      * @dev initiates XEX Stake in amount for a term (days)
      */
     function stake(uint256 amount, uint256 term) external payable checkFee {
-        require(balanceOf(_msgSender()) >= amount, "XEX: not enough balance");
-        require(amount > XEX_MIN_STAKE, "XEX: Below min stake");
-        require(term * SECONDS_IN_DAY > MIN_TERM, "XEX: Below min stake term");
-        require(term * SECONDS_IN_DAY < MAX_TERM_END + 1, "XEX: Above max stake term");
-        require(userStakes[_msgSender()].amount == 0, "XEX: stake exists");
+        require(balanceOf(_msgSender()) >= amount);
+        require(amount > XEX_MIN_STAKE);
+        require(term * SECONDS_IN_DAY > MIN_TERM);
+        require(term * SECONDS_IN_DAY < MAX_TERM_END + 1);
+        require(userStakes[_msgSender()].amount == 0);
         // burn staked XEX
         _burn(_msgSender(), amount);
         // create XEX Stake
@@ -366,7 +366,7 @@ contract Main is Context, OFTV2
      */
     function withdraw() external payable checkFee {
         StakeInfo memory userStake = userStakes[_msgSender()];
-        require(userStake.amount > 0, "XEX: no stake exists");
+        require(userStake.amount > 0);
         uint256 xenReward = _calculateStakeReward(
             userStake.amount,
             userStake.term,

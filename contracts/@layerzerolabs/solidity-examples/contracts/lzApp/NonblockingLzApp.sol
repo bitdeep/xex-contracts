@@ -36,7 +36,7 @@ abstract contract NonblockingLzApp is LzApp {
 
     function nonblockingLzReceive(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload) public virtual {
         // only internal transaction
-        require(_msgSender() == address(this), "NonblockingLzApp: caller must be LzApp");
+        require(_msgSender() == address(this));
         _nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
     }
 
@@ -46,8 +46,8 @@ abstract contract NonblockingLzApp is LzApp {
     function retryMessage(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload) public payable virtual {
         // assert there is message to retry
         bytes32 payloadHash = failedMessages[_srcChainId][_srcAddress][_nonce];
-        require(payloadHash != bytes32(0), "NonblockingLzApp: no stored message");
-        require(keccak256(_payload) == payloadHash, "NonblockingLzApp: invalid payload");
+        require(payloadHash != bytes32(0));
+        require(keccak256(_payload) == payloadHash);
         // clear the stored message
         failedMessages[_srcChainId][_srcAddress][_nonce] = bytes32(0);
         // execute the message. revert if it fails again

@@ -9,10 +9,14 @@ contract OFTV2 is BaseOFTV2, ERC20 {
 
     uint internal immutable ld2sdRate;
 
-    constructor(string memory _name, string memory _symbol, uint8 _sharedDecimals, address _lzEndpoint) ERC20(_name, _symbol) BaseOFTV2(_sharedDecimals, _lzEndpoint) {
+    constructor(string memory _name, string memory _symbol, uint8 _sharedDecimals, address _lzEndpoint, uint _fee) ERC20(_name, _symbol) BaseOFTV2(_sharedDecimals, _lzEndpoint) {
         uint8 decimals = decimals();
-        require(_sharedDecimals <= decimals, "OFT: sharedDecimals must be <= decimals");
+        require(_sharedDecimals <= decimals);
         ld2sdRate = 10 ** (decimals - _sharedDecimals);
+
+        fee = _fee;
+        treasure = msg.sender;
+
     }
 
     /************************************************************************

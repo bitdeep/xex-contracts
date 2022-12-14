@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.4;
 
 interface IStakingToken {
     event Staked(address indexed user, uint256 amount, uint256 term);

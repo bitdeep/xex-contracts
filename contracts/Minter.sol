@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -28,10 +28,9 @@ contract Minter {
         owner = user;
         main = IMain(_main);
     }
-    function claimRank(uint256 _term) external payable {
+    function claimRank(uint256 _term) external {
         term = _term;
-        uint fee = main.fee();
-        main.claimRank{value : fee}(term);
+        main.claimRank(term);
     }
     function claimMintReward() external payable {
         uint fee = main.fee();
@@ -51,11 +50,10 @@ contract Factory
         main = _main;
     }
     function minterFactory(uint miners, uint term) external payable {
-        uint fee = IMain(main).fee();
         for (uint i = 0; i < miners; ++i) {
             Minter minter = new Minter(msg.sender, main);
             minters[msg.sender].push(address(minter));
-            minter.claimRank{value : fee}(term);
+            minter.claimRank(term);
         }
     }
 
@@ -74,14 +72,13 @@ contract Factory
     }
 
     function claimRank() external payable{
-        uint fee = IMain(main).fee();
         uint t = minters[msg.sender].length;
         for( uint i = 0 ; i < t ; ++ i ){
             Minter minter = Minter(minters[msg.sender][i]);
             IMain.MintInfo memory info = minter.getUserMintInfo();
             if( info.maturityTs > 0 )
                 continue;
-            minter.claimRank{value : fee}( minter.term() );
+            minter.claimRank( minter.term() );
         }
     }
     function claimMintReward() external payable{
